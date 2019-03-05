@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>personium baas demo 1</title>
+<script>
+	var tokenJson;
+	var $ = function(id) {
+		return document.getElementById(id);
+	}
+	var send = function() {
+
+		var selectMethod = $("method");
+		var options = selectMethod.options;
+		var method = options.item(selectMethod.selectedIndex).value;
+		var address = $("url").value;
+		var reqHeadersTxt = $("requestHeader").value;
+
+		var reqBody = $("requestBody");
+		var resBody = $("responseBody");
+		if (!address) {
+			alert('Please enter a URL');
+			return;
+		}
+
+		var xmlhttp = xmlttp();
+
+		xmlhttp.open(method, address, true);
+		xmlhttp.onreadystatechange = function() {
+			// 正常に送信
+			if (xmlhttp.readyState == 4) {
+				if (xmlhttp.status == 204 || xmlhttp.status == 1223) {
+					resBody.value = "(No Content)";
+				}
+				$('status').innerHTML = xmlhttp.status;
+				var rh = xmlhttp.getAllResponseHeaders();
+				$('responseHeader').value = rh;
+				try {
+					var obj = JSON.parse(xmlhttp.responseText);
+					resBody.value = JSON.stringify(obj, null, "  ");
+				} catch (e) {
+					resBody.value = xmlhttp.responseText;
+				}
+			}
+		}
+		//Sending Header
+		if (reqHeadersTxt) {
+			var headerLines = reqHeadersTxt.split('\n');
+			for ( var i in headerLines) {
+				try {
+					var kv = headerLines[i].split(':');
+					xmlhttp.setRequestHeader(kv[0], kv[1].trim());
+				} catch (e) {
+					// ignore;
+				}
+
+			}
+		}
+		try {
+			if (method == "POST" || method == "PUT" || method == "MERGE" || method == "MKCOL") {
+				// When Sending body
+				xmlhttp.send(reqBody.value);
+			} else {
+				xmlhttp.send("");
+			}
+		} catch (e) {
+			alert('Something is wrong. \n' + e);
+		}
+	}
+
+	function xmlttp() {
+		var xmlhttp = false;
+
+		// IE detection
+		if (typeof ActiveXObject != "undefined") {
+			try {
+				//Msxml2.XMLHTTP
+				xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+			} catch (e) {
+				try {
+					//Microsoft.XMLHTTP
+					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+				} catch (e2) {
+					xmlhttp = false;
+				}
+			}
+		}
+		// other browsers
+		if (!xmlhttp && typeof XMLHttpRequest != "undefined") {
+			xmlhttp = new XMLHttpRequest();
+		}
+		return xmlhttp;
+	}
+
+	function tool(method, url, body, headers, cookie) {
+		var selectMethod = $("method");
+		var options = selectMethod.options;
+		for ( var i = 0; i < options.length; i++) {
+			if (method == options.item(i).value) {
+				selectMethod.selectedIndex = i;
+			}
+		}
+		$("url").value = get_abs(url);
+		$("requestBody").value = (body) ? body : '';
+		$("responseBody").value = '';
+		$("status").value = '';
+
+		if (headers) {
+			var h = '';
+			for (hName in headers) {
+				h = h + hName + ': ' + headers[hName] + '\n';
+			}
+			$("requestHeader").value = h;
+		} else {
+			$("requestHeader").value = ((body) ? 'Content-Type: application/json\n'
+					: '')
+					+ 'Accept: application/json';
+		}
+
+		if (cookie) {
+			$("requestHeader").value = $("requestHeader").value + "\nAuthorization:Bearer " + tokenJson.access_token;
+		}
+
+		setTimeout(send, 500);
+
+	}
+	var get_abs = function(path){
+		var e = document.createElement('span');
+		e.innerHTML = '<a href="'+path+'" />';
+		return e.firstChild.href;
+	}
+
+
+</script>
+<style type="text/css">
+input,select,textarea {
+	font-size: 80%;
+}
+
+textarea {
+	width: 100%;
+}
+
+#requestHeader {
+	height: 40px;
+}
+
+#requestBody {
+	height: 120px;
+}
+#responseHeader {
+	height: 30px;
+}
+#responseBody {
+	height: 250px;
+}
+
+table.ex {
+	width: 90%; /* 表の幅 */
+	margin-bottom: 30px; /* 表の下マージン */
+	border: 1px #c0c0c0 solid; /* 大枠の境界線 */
+	border-collapse: collapse;
+	font-size: 80%;
+}
+
+/* --- セル --- */
+table.ex th,table.ex td { /* width: 20%; */ /* セルの幅（セルの幅を均等にする場合） */
+	padding: 6px 8px; /* セルのパディング（上下、左右） */
+	border: 1px #c0c0c0 solid; /* セルの境界線 */
+}
+
+/* --- 見出しセル --- */
+table.ex thead th {
+	background-color: #deefff; /* 見出しセルの背景色 */
+	text-align: center;
+}
+
+/* --- フッタセル --- */
+table.ex tfoot td {
+	background-color: #f5f5f5; /* フッタセルの背景色 */
+}
+
+/* --- データセル --- */
+table.ex tbody td {
+	background-color: #ffffff; /* データセルの背景色 */
+}
+
+#tool-request {
+	background-color: #ddffdd;
+	padding: 5px;
+	font-size: 12px;
+}
+
+#tool-request h3 {
+	color: #ffffff;
+	background-color: #669966;
+	padding: 5px;
+	margin: 0px;
+}
+
+#tool-response {
+	background-color: #ddddff;
+	font-size: 12px;
+	padding: 5px;
+}
+
+#tool-response h3 {
+	color: #ffffff;
+	background-color: #666699;
+	padding: 5px;
+	margin: 0px;
+}
+
+#right {
+	background-color: #eeeeee;
+	height: 100%;
+	right: 0;
+	margin: 0px;
+	padding: 5px;
+	position: fixed;
+	_position: absolute;
+	top: 0;
+	width: 460px;
+}
+
+#left {
+	height: 100%;
+	margin: 0 470px 0 0;
+	_overflow: auto;
+	padding: 0;
+}
+
+#url {
+	width: 100%;
+}
+</style>
+
+  </head>
+  <body>
+	<div id="right">
+		<h4>You can make a RESTful HTTP request </h4>
+		<div id="tool-request">
+			<h3>Request</h3>
+			Method <SELECT name="method" id="method">
+				<OPTION value="GET">GET</OPTION>
+				<OPTION value="POST">POST</OPTION>
+				<OPTION value="PUT">PUT</OPTION>
+				<OPTION value="MERGE">MERGE</OPTION>
+				<OPTION value="DELETE">DELETE</OPTION>
+				<OPTION value="PROPFIND">PROPFIND</OPTION>
+				<OPTION value="MKCOL">MKCOL</OPTION>
+			</SELECT><br> URL<br> <input type="text" value="" id="url">
+			Headers<br>
+			<textarea name="MSG" id="requestHeader"></textarea>
+			<br> Body<br>
+			<textarea name="MSG" id="requestBody"></textarea>
+			<br>
+			<div style="text-align: right; width: 100%">
+				<input type="button" value="Send" onClick="send();">
+			</div>
+		</div>
+		<div id="tool-response">
+			<h3>Response</h3>
+			Status Code: <span id="status"></span><br />
+			Headers<br>
+			<textarea name="MSG" id="responseHeader"></textarea>
+			<br>Body<br>
+			<textarea name="MSG" id="responseBody"></textarea>
+		</div>
+
+	</div>
+
+	<div id="left">
+		<h1>personium Demo 1 - OData, WebDAV</h1>
+                <p>
+		<!-- このデモはOData, WebDAVの概要をつかんで頂くためのものです。-->
+		<!-- どちらもHTTPベースでデータ操作をするためのプロトコルで、
+                     ODataはリレーショナルデータを、WebDAVはディレクトリツリー型のファイルシステムを扱うためのものです-->
+		<!-- これら二つのRESTベースのプロトコルは国際標準であり、personiumのほかにも様々なところでも使われています。-->
+                This demo is to explain what OData, WebDAV are like. 
+                These two REST-based protocols are international standards widely used in various area other than personium also. 
+		<!-- personiumをBaaSやPDSとして使ったアプリケーション開発は、即ちこれら二つの標準規格に向けたアプリ開発となります。-->
+		<!-- またpersoniumのインターフェイスの9割以上はこの二つの標準の上で成り立っており-->
+		More than 90% of personium API are based on these two standardized protocols. So application development using
+                personium means application development against OData, WebDAV.
+
+                </p>
+		<h3>1.Sample Application</h3>
+                <p>
+                <!--まずはこちらのシンプルなデモアプリをご覧ください。-->
+                Before everything, just take a look at this simple demo application.
+<a href="app.html" target="app">app</a>
+                </p>
+                
+
+		<h3>2.Data API List</h3>
+		<p>The simple app above is operating only two APIs below.</p>
+		<!--このアプリは以下のデータAPI群を使って動作しています。-->
+		<!--このアプリは以下のリードのみ公開するよう設定された以下のデータAPI群を使って動作しています。-->
+		<!--The following data are configured to be publically readable, so can be accessed without any authentication / authorization.-->
+
+		<table class="ex">
+			<thead>
+				<tr>
+					<th>Data Name</th>
+					<th>Type</th>
+					<th>URL</th>
+					<th>Demo Request</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Country Info</td>
+					<td>OData</td>
+					<td id="1-url">https://baas-demo.demo.personium.io/1/odata/country_info</td>
+					<td><a href="javascript:tool('GET',$('1-url').innerHTML, null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>Country Name</td>
+					<td>OData</td>
+					<td id="2-url">https://baas-demo.demo.personium.io/1/odata/country_name</td>
+					<td><a href="javascript:tool('GET',$('2-url').innerHTML, null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>Flag Images</td>
+					<td>WebDAV</td>
+					<td id="3-url">https://baas-demo.demo.personium.io/1/flags/</td>
+					<td><a href="javascript:tool('PROPFIND',$('3-url').innerHTML, null, {Depth:1}, false);">click</a></td>
+				</tr>
+			</tbody>
+		</table>
+
+
+
+		<h3>3. OData</h3>
+                <p><a href="http://en.wikipedia.org/wiki/OData" target="doc">OData</a> provides RESTful interface for manipulating a relational data model. It enables various search like below.</p>
+		<table class="ex">
+			<thead>
+				<tr>
+					<th>Senario</th>
+					<th>Description</th>
+					<th>Demo Request</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Single value retrieval</td>
+					<td>retrieve a single record by specifying a key (__id value)</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info(%2527JP%2527)', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>$orderby: sorting </td>
+					<td>sorting in the inverse order of Area_sqkm</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info?$orderby=Area_sqkm+desc', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>$top: limiting the returned records</td>
+					<td>First 50 records in the search result are returned. Default value for $top is 25 in personium</td>
+					<td><a href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info?$top=50&$orderby=Area_sqkm+desc', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>$skip: pagenation</td>
+					<td>Skipping the first 50 records and return following 50 records from the search result.  This is typically used for pagenation UI.</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info?$top=50&$skip=50&$orderby=Area_sqkm+desc', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>$filter: search condition</td>
+					<td>Like SQL "where" clause, various search condition with comparison, bool calculation etc. can be written in $filter. 
+
+Example: records whose Goverment values match (eq) 'republic'</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info?$filter=Government+eq+%2527republic%2527', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>$inlinecount: hit count</td>
+					<td>You can let the response to linclude the hit count, the number of records that matches the condition, 
+Hit count is returned with  "__count" key.</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_info?$inlinecount=allpages&$top=0', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>Fulltext search</td>
+					<td>Example: "republic" (url encoding needed for non-ascii query)</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/country_name?q=republic', null, false);">click</a></td>
+				</tr>
+				<tr>
+					<td>Schema View</td>
+					<td>Schema information can be retrieved in EDMX format</td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/odata/$metadata', null, false);">click</a></td>
+				</tr>
+			</tbody>
+		</table>
+
+
+		<h2>4. WebDAV</h2>
+		<p><a href="http://en.wikipedia.org/wiki/WebDAV" target="doc">WebDAV</a> is HTTP-based extended protocol. 
+File operations are WebDAV
+Since WebDAV is entended HTTP, you can embed WebDAV endpoint URL in HTML files. 
+
+
+
+<!--HTML, JavaScript, cssや各種メディアファイルを配置することで、Webサーバの代替として使うこともできます。
+そのため、personiumサーバのみでWebアプリケーションを-->
+
+
+		</p>
+		<img src="https://baas-demo.demo.personium.io/1/flags/JP.png" width="200"/>
+		<table class="ex">
+			<thead>
+				<tr>
+					<th>Senario</th>
+					<th>Desciption</th>
+					<th>Demo Request</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Upload</td>
+					<td>PUT Method for file upload. You can either create new resource or update existing one. Content-Type header value sent while uploading will be returned when downloading.</td>
+					<td><a
+						href="javascript:tool('PUT','https://baas-demo.demo.personium.io/1/dav/testDir/sample.htm', 'test text file content', {'Content-Type':'text/html'}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>Download</td>
+					<td>GET Method for file download. Content-Type header value </td>
+					<td><a
+						href="javascript:tool('GET','https://baas-demo.demo.personium.io/1/dav/sample.htm', null, {'Dummy':'Header'}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>List in a directory</td>
+					<td>PROPFIND method together with Depth header. The list of the </td>
+					<td><a
+						href="javascript:tool('PROPFIND','https://baas-demo.demo.personium.io/1/', null, {'Depth':1}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>Delete</td>
+					<td>by sending DELETE method to the resource URL</td>
+					<td><a href="javascript:tool('DELETE','https://baas-demo.demo.personium.io/1/dav/testDir/sample.htm', null, {'Accept':'application/xml'}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>Collision Detection</td>
+					<td>Optimal locking using <a href="http://en.wikipedia.org/wiki/HTTP_ETag" target="doc">ETag</a>. 
+Everytime you update a record, its ETag value changes.
+On updating or deleting a record, you may send ETag value of a file with If-Match request header and operation fails if the ETag value does not match.
+It happens when somebody else changes the record, so you can detect the collision of multile update or delete.</td>
+					<td><a href="javascript:tool('PUT','https://baas-demo.demo.personium.io/1/sample.htm', null, {'ETag':'12343241341413'}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>Create a folder</td>
+					<td>use special MKCOL method to create a collection (folder / directory in WebDAV terminology)</td>
+					<td><a
+						href="javascript:tool('MKCOL','https://baas-demo.demo.personium.io/1/dav/testDir2', '<?xml version=\'1.0\' encoding=\'utf-8\'?><D:mkcol xmlns:D=\'DAV:\' xmlns:dc=\'urn:x-dc1:xmlns\'><D:set><D:prop><D:resourcetype><D:collection/></D:resourcetype></D:prop></D:set></D:mkcol>',{'Accept':'application/xml'}, true);">click</a></td>
+				</tr>
+				<tr>
+					<td>Delete a folder</td>
+					<td>DELETE method for deleting a collection (folder, directory).It fails if it has contents, ie. files or subdirectories.</td>
+					<td><a
+						href="javascript:tool('DELETE','https://baas-demo.demo.personium.io/1/testDir2', null,{'Accept':'application/xml'}, true);">click</a></td>
+				</tr>
+			</tbody>
+		</table>
+
+
+
+	</div>
+<!--		<h2>３．ODataの登録/更新/削除</h2>
+		<p>
+			ODataでの登録・編集・削除処理をご理解いただくためのサンプルとして、
+			みなさんの領域(rest-sample Box)に/sample/odataというODataサービスを作ってあります。<br>
+			ODataサービスはRDBのようなものでこの中にEntitySet(テーブルのようなもの）を作成することで
+			リレーショナルモデルでのデータ操作ができます。<br>
+			このODataサービスにはアクセス制限がかかっているため、<br>
+		「Authorization」ヘッダでのアクセストークンの付与が必要です。<br>
+		（ログイン後に３と４のサンプルを押下すると、自動で「Authorization」ヘッダが付与されます。）<br>
+		認証に関するその他の情報は、<a href="http://nagao.vpdc.sg.soft.fujitsu.com/manual/latest/Japanese/Japanese.htm#APIReferenceGuide/ja/%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%AC%E3%82%A4%E3%83%89/AuthenticationandAccessControl/Authentication_Model.htm" target="docs">リンク</a>をご参照下さい。</p>
+		</p>
+
+		<h4>リクエストのサンプル</h4>
+
+		<script>
+			var taro = '{"__id":"1","name":"富士通太郎","message":"よろしくお願い致します。","No":001}';
+			var jiro = '{"name":"富士通二郎","message":"どうぞ、よろしくお願い致します。","No":001}';
+			var sabro = '{"name":"富士通三郎"}';
+			var ifMatch = {"If-Match":"W/\"1-1383296993742\"", "Content-Type":"application/json"};
+		</script>
+		<table class="ex">
+			<thead>
+				<tr>
+					<th>機能</th>
+					<th>説明</th>
+					<th>サンプル</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>1件登録</td>
+					<td>主キーは"__id"で固定です。<br>省略すると自動採番(UUID)となります
+					</td>
+					<td><a
+						href="javascript:tool('POST','../sample/odata/Messages', taro, null, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>キー指定で1件取得</td>
+					<td>今登録した情報を取得します.</td>
+					<td><a
+						href="javascript:tool('GET','../sample/odata/Messages(%25271%2527)', null, null, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>リスト取得</td>
+					<td>さきほどの登録リクエストを色々いじって複数件登録してからこれを呼んでみましょう。</td>
+					<td><a
+						href="javascript:tool('GET','../sample/odata/Messages?$orderby=name', null, null, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>更新</td>
+					<td>1件取得のＵＲＬにPUTメソッドを送ると更新です</td>
+					<td><a
+						href="javascript:tool('PUT','../sample/odata/Messages(%25271%2527)', jiro, null, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>部分更新</td>
+					<td>PUTメソッドのかわりにMERGEというメソッドを送ると特定項目のみ更新します</td>
+					<td><a
+						href="javascript:tool('MERGE','../sample/odata/Messages(%25271%2527)', sabro, null, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>衝突検知</td>
+					<td><a href="http://ja.wikipedia.org/wiki/HTTP_ETag" target="doc">ETag</a>を使った楽観ロック機構があります。更新・削除時にレコードを取得した際のETag値をIf-Matchヘッダで送付すれば、他の端末からの更新があった場合処理に失敗しますので、これをもって衝突検知ができます。</td>
+					<td><a
+						href="javascript:tool('MERGE','../sample/odata/Messages(%25271%2527)', sabro, ifMatch, true);">Sample</a></td>
+				</tr>
+				<tr>
+					<td>削除</td>
+					<td>1件取得のＵＲＬにDELETEメソッドを送ると削除です</td>
+					<td><a
+						href="javascript:tool('DELETE','../sample/odata/Messages(%25271%2527)', null, null, true);">Sample</a></td>
+				</tr>
+			</tbody>
+		</table>
+-->
+
+
+  </body>
+</html>
